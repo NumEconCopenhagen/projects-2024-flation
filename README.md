@@ -1,9 +1,8 @@
-# \[Group name\]
+# \[Inflation Sensation 2/3\]
 
 **Group members:**
-- A
-- B
-- C
+- Oliver Christian Carl (vqz852)
+- Adrian Zangoui Høegh-Andersen (cjr304)
 
 This repository contains  
 1. Inaugural project. 
