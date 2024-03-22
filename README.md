@@ -1,4 +1,4 @@
-# \[Flation\]
+# Flation
 
 **Group members:**
 - Oliver Christian Carl (vqz852)
