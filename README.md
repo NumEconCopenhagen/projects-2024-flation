@@ -1,4 +1,4 @@
-# \[Inflation Sensation 2/3\]
+# \[Flation\]
 
 **Group members:**
 - Oliver Christian Carl (vqz852)
