@@ -17,24 +17,18 @@ eu_countries = [
 # We define our favorite colors
 cbs_blue = (73/255, 103/255, 170/255) ; ku_red = (144/255, 26/255, 30/255)
 
-
 def european(df) :
+    #step a: Remove all non-eu countries
     rts_eu = df[df['isoname'].isin(eu_countries)]
     return rts_eu
 
 def data_clean_rts(df) :
-    # Step b: Remove returns to schooling for primary, secondary and tertiary education as well the extra index as these are not of interest to us.
-    # var_ends = ('pri','sec','ter')
     
-    # drop_these = [name for name in df.columns if name.endswith(var_ends)]
-    # df.drop(drop_these, axis = 1, inplace = True)
-    
-    for j in ['coef_','lb_','ub_'] :
-        drop_these = [j + x for x in ['yrl_pri','yrl_sec','yrl_ter']]
-        df.drop(drop_these, axis = 1, inplace = True)
-
-    del df['index']
-
+    # step b: Remove variables not of interest
+    var_ends=('pri', 'sec', 'ter')
+    drop_these=[name for name in df.columns if name.endswith(var_ends)]
+    df.drop(drop_these, axis = 1, inplace = True)
+        
     # Step c: Rename variables such that they are easy to understand
     rename_dict = {}
     rename_dict['isoname'] = 'country'
@@ -58,6 +52,8 @@ def data_clean_rts(df) :
 
     # Step e: The dataset is sorted from smallets return to schooling to largest
     rts_eu_sorted = df.sort_values('return_to_schooling').reset_index()
+
+    del rts_eu_sorted['index']
 
     return rts_eu_sorted
 
@@ -100,7 +96,6 @@ def data_clean_gexp(df) :
 def grand_merge(df1,df2) :
     # Doing a left merge on country and iso (We do it on iso as it is in both datasets)
     gexp_rts_eu = pd.merge(df1, df2, on = ['country','iso'], how = 'left')
-    del gexp_rts_eu['index']
 
     return gexp_rts_eu
 
