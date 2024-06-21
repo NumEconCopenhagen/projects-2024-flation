@@ -17,11 +17,10 @@ class ExchangeEcon :
         # Preference parameters
         par.alpha = 1/3 ; par.beta = 2/3 # Consumer A's and B's income shares for good 1
 
-        # Discrete possibilities (N is set to 76 as to accomodate for zero)
+        # Discrete possibilities (N is set to 76 as to accomodate for zero and 0.5)
         par.N = 76
 
-        for key, value in kwargs.items() :
-            setattr(par,key,value) # like self.key = value
+        
     
     def utility_A(self,x1A,x2A) : # Consumer A's utility function
         return ((x1A)**self.par.alpha)*((x2A)**(1-self.par.alpha))
@@ -50,8 +49,11 @@ class ExchangeEcon :
 
         return eps1,eps2
 
+    # Question 1 Hej
+
     # This function finds all paretoimproving allocations given an endowment.
     def FindCore(self) :
+        ''' Finds the paretoimproving allocations in C'''
         
         # x1A and x2A are defined as arrays per the assignments instructions
         x1A_vec = np.linspace(0,1,76) ; x2A_vec = np.linspace(0,1,76) ; 
@@ -59,7 +61,7 @@ class ExchangeEcon :
         # The two arrays are combined into a grid
         X,Y = np.meshgrid(x1A_vec,x2A_vec)
         
-        # Utility of consumer A and B if they consumer their endowment
+        # Utility of consumer A and B if they consume their endowment
         uA = self.utility_A(self.par.w1A,self.par.w2A)
         uB = self.utility_B(self.par.w1B,self.par.w2B)
         
@@ -80,6 +82,8 @@ class ExchangeEcon :
         return  x_core,y_core,core
     
     def PlotCore(self,x_core,y_core) :
+        ''' Plots the paretoimproving allocations in C'''
+
         # a. total endowment
         w1bar = 1.0 ; w2bar = 1.0
 
@@ -115,15 +119,16 @@ class ExchangeEcon :
 
         ax_A.legend(frameon=True,loc='upper right',bbox_to_anchor=(1.6,1.0))
 
-    def FindError(self):
-        # Function to find the error in the market clearing conditions at a given price in the discrete price set.
-        p1 = np.linspace(0.5, 2.5, self.par.N) # Create the price set
-        e1 = np.empty(self.par.N)
-        e2 = np.empty(self.par.N)
-        
-        
 
-        # Fill two vector with the market clearing error
+    # Question 2
+
+    def FindError(self):
+        ''' Function to find the error in the market clearing conditions at a given price in the discrete price set. '''
+        p1 = np.linspace(0.5, 2.5, self.par.N) # Create the price set
+        e1 = np.empty(self.par.N) # Empty vector for epsilon1
+        e2 = np.empty(self.par.N) # Empty vector for epsilon2
+        
+        # Fill the two vectors with the market clearing error
         p_opt = 0 ; eps1_small = 50 ; eps2_small = 50
         for i,p in enumerate(p1):
             e1[i],e2[i] = self.check_market_clearing(p)
@@ -134,7 +139,7 @@ class ExchangeEcon :
                 eps2_small = e2[i]
 
         print(f'The smallest market clearing error is (eps1,eps2) = ({eps1_small:.3f},{eps2_small:.3f})')
-        print(f'The prices that has the smallest market clearing error is {p_opt:.3f}')
+        print(f'The price that has the smallest market clearing error is p1 = {p_opt:.3f}')
 
         # Plot the results
         plt.figure(figsize=(8, 6))
@@ -149,8 +154,11 @@ class ExchangeEcon :
 
         return p_opt, eps1_small, eps2_small
     
+
+    # Question 3
+
     def ClearingPrice(self,p1,kappa=0.5,maxiter = 500) :
-    # This function find the market clearing price
+        ''' This function find the market clearing price '''
 
         t = 0 # Initiate counter
         
@@ -163,8 +171,8 @@ class ExchangeEcon :
                 print(f'The solver has exceeded {maxiter} iterations')
             elif np.abs(eps1) < 1e-08 :
                 print(f'The market clearing price for good 1: {p1:.3f}')
-                print(f'Value of the market clearing condition for the market of good 1: {eps1:.3f}')
-                print(f'Value of the market clearing condition for the market of good 2: {eps2:.3f}')
+                print(f'Value of the market clearing error for the market of good 1: {eps1:.3f}')
+                print(f'Value of the market clearing error for the market of good 2: {eps2:.3f}')
                 break   
             
             # If the loop is not stopped the price of good 1 will be updated
@@ -184,18 +192,21 @@ class ExchangeEcon :
         
         return p1
 
+    # Question 4.a
+
     # Objective function to minimized with regards to the price of good 1
     # Takes a price and calculates the demand of consumer B at that price
-    # Then calculates 
     def Objective4(self,p1) :
         x1B,x2B = self.demand_B(p1)
         return -self.utility_A(1-min(x1B,1),1-min(x2B,1))
 
     def SolveADiscrete(self) :
+        ''' Function to find the price and allocation if A chooses in the discrete set'''
         t = 0
         # Vector of possible prices    
         p_vec = np.linspace(0.5,2.5,self.par.N)
-    
+
+        # Find the maximal utility that A can achieve given the demand of B
         p1 = 1 ; uA = 1e-08
         for p in p_vec :
             
@@ -213,11 +224,15 @@ class ExchangeEcon :
         print(f'Utility of consumer A at their chosen price is {uA:.3f} and for consumer B it is {uB:.3f}')
         return p1
     
+    # Question 4.b
+
     def SolveAContinous(self) :
+        ''' Function to find the price and allocation if A chooses in the continous set'''
 
         initial_guess = [1] # We need an initial guess for the equilibrium price
         bounds = [(0,None)] # Any positive non-zero price can be chosen
 
+        # Find the maximal utility that A can achieve given the demand of B
         solution = scipy.optimize.minimize(
             self.Objective4, initial_guess, bounds = bounds)
         
@@ -228,20 +243,27 @@ class ExchangeEcon :
         print(f'Utility of consumer A at their chosen price is {uA[0]:.3f} and for consumer B it is {uB[0]:.3f}')
         return solution.x[0]
 
-    # Function to maximize consumer A's utility from a given set of allocations
-    def MaxUtilACore(self,core) :
-        u_max = 1e-08
+    
+    # Question 5.a
 
+    def MaxUtilACore(self,core) :
+        '''Function to maximize consumer A's utility from a given set of allocations'''
+        u_max = 1e-08 # Minimum utility value
+
+        # Loop through all pareto improving allocations in C and find the one that maximizes the utility of A
         for xA in core :
             u = self.utility_A(xA[0],xA[1])
 
+            # Save the max utility and allocation
             if u > u_max :
                 u_max = u
                 x1A = xA[0]
                 x2A = xA[1]
         
+        # Calculate the utility of consumer B under A's choice
         uB = self.utility_B(1-x1A,1-x2A)
 
+        # Print the results
         print(f'Consumer A chooses the allocation (x1A,x2A) = ({x1A:.2f},{x2A:.2f})')
         print(f'Utility of consumer A at this allocation is {u_max:.3f} and for consumer B it is {uB:.3f}')
         return x1A,x2A
