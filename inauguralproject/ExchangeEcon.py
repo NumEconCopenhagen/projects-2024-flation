@@ -473,3 +473,47 @@ class ExchangeEcon :
             print(f'uA = {uA_3:.3f} : uB = {uB_3:.3f} : uA + uB = {tot_3:.3f}')
             print( )
 
+    def random_allocations(self) :
+        W = np.random.uniform(0,1,(50,2))
+        return W
+    
+    def market_eq_loop(self,W) :
+
+   
+        
+        for i in W :
+
+            t = 0 # Initiate counter
+            w1A,w2A = i
+
+            while True : # Loop to solve for market clearing price
+                
+                x1A,x2A = self.par.alpha*(w1A*p1+w2A)/p1, (1-self.par.alpha)*(w1A*p1+w2A)
+                eps1 = x1A-w1A + x1B-(1-w1A)
+
+                x1B,x2B = self.par.beta*(1-w1A)*p1+(1-w2A)/p1, (1-self.par.beta)*(1-w1A)*p1+(1-w2A)
+                eps2 = x2A-w2A + x2B-(1-w2A)
+
+                # Stops the loop when excess demand is close to 0 or if more than 500 iterations has been made
+                # Output is printed
+                if t >= maxiter :
+                    print(f'The solver has exceeded {maxiter} iterations')
+                elif np.abs(eps1) < 1e-08 :
+                    break   
+            
+                # If the loop is not stopped the price of good 1 will be updated
+                p1 = p1 + kappa*eps1
+
+                t += 1   
+
+            print(eps2)
+
+
+
+        
+
+
+
+
+
+        
