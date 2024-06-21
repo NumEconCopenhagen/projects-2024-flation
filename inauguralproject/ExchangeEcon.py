@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 from types import SimpleNamespace
 import scipy
 
+start = "\033[1m"
+end = "\033[0;0m"
+
 class ExchangeEcon :
     
     def __init__(self,**kwargs) : # Initiate the model class
@@ -157,7 +160,7 @@ class ExchangeEcon :
 
     # Question 3
 
-    def ClearingPrice(self,p1,kappa=0.5,maxiter = 500) :
+    def ClearingPrice(self,p1 = 1,kappa=0.5,maxiter = 500, do_print = True) :
         ''' This function find the market clearing price '''
 
         t = 0 # Initiate counter
@@ -168,11 +171,13 @@ class ExchangeEcon :
             # Stops the loop when excess demand is close to 0 or if more than 500 iterations has been made
             # Output is printed
             if t >= maxiter :
-                print(f'The solver has exceeded {maxiter} iterations')
+                if do_print :
+                    print(f'The solver has exceeded {maxiter} iterations')
             elif np.abs(eps1) < 1e-08 :
-                print(f'The market clearing price for good 1: {p1:.3f}')
-                print(f'Value of the market clearing error for the market of good 1: {eps1:.3f}')
-                print(f'Value of the market clearing error for the market of good 2: {eps2:.3f}')
+                if do_print :
+                    print(f'The market clearing price for good 1: {p1:.3f}')
+                    print(f'Value of the market clearing error for the market of good 1: {eps1:.3f}')
+                    print(f'Value of the market clearing error for the market of good 2: {eps2:.3f}')
                 break   
             
             # If the loop is not stopped the price of good 1 will be updated
@@ -187,10 +192,13 @@ class ExchangeEcon :
 
         x1As,x2As = self.demand_A(p1) ; uA = self.utility_A(x1As,x2As)
         x1Bs,x2Bs = self.demand_B(p1) ; uB = self.utility_B(x1Bs,x2Bs)
-        print(f'The allocation they would end with would be (x1A,x2A) = ({x1As:.2f},{x2As:.2f})')
-        print(f'Utility of consumer A in equlibrium is {uA:.3f} and for consumer B it is {uB:.3f}')
+
+        if do_print :
+            print(f'The allocation they would end with would be (x1A,x2A) = ({x1As:.2f},{x2As:.2f})')
+            print(f'Utility of consumer A in equlibrium is {uA:.3f} and for consumer B it is {uB:.3f}')
         
-        return p1
+        return x1As, x2As
+
 
     # Question 4.a
 
@@ -200,7 +208,7 @@ class ExchangeEcon :
         x1B,x2B = self.demand_B(p1)
         return -self.utility_A(1-min(x1B,1),1-min(x2B,1))
 
-    def SolveADiscrete(self) :
+    def SolveADiscrete(self,do_print=True) :
         ''' Function to find the price and allocation if A chooses in the discrete set'''
         t = 0
         # Vector of possible prices    
@@ -219,14 +227,16 @@ class ExchangeEcon :
         
         x1Bs,x2Bs = self.demand_B(p1) ; uB = self.utility_B(x1Bs,x2Bs)
         uA = self.utility_A(1-x1Bs,1-x2Bs)
-        print(f'The price of good 1 that consumer A would choose: {p1:.3f}')
-        print(f'The allocation they would end with would be (x1A,x2A) = ({1-x1Bs:.2f},{1-x2Bs:.2f})')
-        print(f'Utility of consumer A at their chosen price is {uA:.3f} and for consumer B it is {uB:.3f}')
-        return p1
+        if do_print :
+            print(f'The price of good 1 that consumer A would choose: {p1:.3f}')
+            print(f'The allocation they would end with would be (x1A,x2A) = ({1-x1Bs:.2f},{1-x2Bs:.2f})')
+            print(f'Utility of consumer A at their chosen price is {uA:.3f} and for consumer B it is {uB:.3f}')
+        return 1-x1Bs, 1-x2Bs
     
+
     # Question 4.b
 
-    def SolveAContinous(self) :
+    def SolveAContinous(self,do_print = True) :
         ''' Function to find the price and allocation if A chooses in the continous set'''
 
         initial_guess = [1] # We need an initial guess for the equilibrium price
@@ -238,16 +248,18 @@ class ExchangeEcon :
         
         x1Bs,x2Bs = self.demand_B(solution.x) ; uB = self.utility_B(x1Bs,x2Bs)
         uA = self.utility_A(1-x1Bs,1-x2Bs)
-        print(f'The price of good 1 that consumer A would choose: {solution.x[0]:.3f}')
-        print(f'The allocation they would end with would be (x1A,x2A) = ({1-x1Bs[0]:.2f},{1-x2Bs[0]:.2f})')
-        print(f'Utility of consumer A at their chosen price is {uA[0]:.3f} and for consumer B it is {uB[0]:.3f}')
-        return solution.x[0]
+        if do_print :
+            print(f'The price of good 1 that consumer A would choose: {solution.x[0]:.3f}')
+            print(f'The allocation they would end with would be (x1A,x2A) = ({1-x1Bs[0]:.2f},{1-x2Bs[0]:.2f})')
+            print(f'Utility of consumer A at their chosen price is {uA[0]:.3f} and for consumer B it is {uB[0]:.3f}')
+        
+        return 1-x1Bs, 1-x2Bs 
 
     
     # Question 5.a
 
-    def MaxUtilACore(self,core) :
-        '''Function to maximize consumer A's utility from a given set of allocations'''
+    def MaxUtilACore(self,core,do_print = True) :
+        '''Function to maximize consumer A's utility from a given set of allocations given by C'''
         u_max = 1e-08 # Minimum utility value
 
         # Loop through all pareto improving allocations in C and find the one that maximizes the utility of A
@@ -264,48 +276,74 @@ class ExchangeEcon :
         uB = self.utility_B(1-x1A,1-x2A)
 
         # Print the results
-        print(f'Consumer A chooses the allocation (x1A,x2A) = ({x1A:.2f},{x2A:.2f})')
-        print(f'Utility of consumer A at this allocation is {u_max:.3f} and for consumer B it is {uB:.3f}')
+        if do_print :
+            print(f'Consumer A chooses the allocation (x1A,x2A) = ({x1A:.2f},{x2A:.2f})')
+            print(f'Utility of consumer A at this allocation is {u_max:.3f} and for consumer B it is {uB:.3f}')
         return x1A,x2A
 
-    def MaxUtilParetoImp(self) :
+
+    # Question 5.b
+
+    def MaxUtilParetoImp(self, do_print = True) :
+        '''Function to maximize consumer A's utility from the continous set of all paretoimproving allocations'''
+        # Objective function to be minimized
         def objective(x) :
             return -self.utility_A(x[0],x[1])
         
+        # The constraint allows for all paretoimprovements for consumer B
         constraints = ({'type': 'ineq', 'fun': lambda x: self.utility_B(1-x[0],1-x[1])-self.utility_B(self.par.w1B,self.par.w2B)})
+        
+        # A has to choose a feasible allocation
         bounds = ((0,1),(0,1))
 
+        # The initial guess is made equal to the endowments
         initial_guess =[0.8,0.3]
 
+        # Constrained optimizer
         solution = scipy.optimize.minimize(
             objective, initial_guess, method='SLSQP',
             bounds = bounds, constraints = constraints)
         
+        # Calculate the utility of consumer A and B for the allocation chosen by A
         u_max = self.utility_A(solution.x[0],solution.x[1])
         uB = self.utility_B(1-solution.x[0],1-solution.x[1])
 
-        print(f'Consumer A chooses the allocation (x1A,x2A) = ({solution.x[0]:.2f},{solution.x[1]:.2f})')
-        print(f'Utility of consumer A at this allocation is {u_max:.3f} and for consumer B it is {uB:.3f}')
+        # Print and return results
+        if do_print :
+            print(f'Consumer A chooses the allocation (x1A,x2A) = ({solution.x[0]:.2f},{solution.x[1]:.2f})')
+            print(f'Utility of consumer A at this allocation is {u_max:.3f} and for consumer B it is {uB:.3f}')
         return solution.x[0],solution.x[1]
     
-    def SocialPlanner(self) :
+
+    # Question 6.a
+
+    def SocialPlanner(self, do_print = True) :
+
+        # The objective function to be minimized by the social planner
         def objective(x) :
-            return-(self.utility_A(x[0],x[1])+self.utility_B(1-x[0],1-x[1]))
+            return - ( self.utility_A(x[0],x[1]) + self.utility_B(1-x[0],1-x[1]) )
         
+        # The bounds are specified per the maximization problem such that the allocation is feasible
         bounds = ((0,1),(0,1))
+
+        # The initial are their endowments
         initial_guess = [0.8,0.3]
 
+        # We employ a constrained optimizer and minimize the objective function
         solution = scipy.optimize.minimize(
             objective, initial_guess, method='SLSQP',
             bounds = bounds)
         
+        # The solution of the optimizer is used to find the utility of A and B as well as the total utility
         uA = self.utility_A(solution.x[0],solution.x[1])
         uB = self.utility_B(1-solution.x[0],1-solution.x[1])
         utot = uA + uB
 
-        print(f'The social planner chooses the allocation (x1A,x2A) = ({solution.x[0]:.3f},{solution.x[1]:.3f})')
-        print(f'Utility of consumer A at this allocation is {uA:.3f} and for consumer B it is {uB:.3f}')
-        print(f'Total utility becomes {utot:.3f}')
+        # Print results
+        if do_print :
+            print(f'The social planner chooses the allocation (x1A,x2A) = ({solution.x[0]:.3f},{solution.x[1]:.3f})')
+            print(f'Utility of consumer A at this allocation is {uA:.3f} and for consumer B it is {uB:.3f}')
+            print(f'Total utility becomes {utot:.3f}')
 
         return solution.x[0],solution.x[1]
 
@@ -324,11 +362,11 @@ class ExchangeEcon :
 
             # Local function: When equal to zero we are along the correct indifference curve for consumer B
             def objectiveA(x2) :
-                return self.utility_A(x1,x2)-uA
+                return self.utility_A(x1,x2)-self.utility_A(0.8,0.3)
             
             # Local function: When equal to zero we are along the correct indifference curve for consumer B
             def objectiveB(x2) :
-                return self.utility_B(x1,x2)-uB
+                return self.utility_B(x1,x2)-self.utility_B(1-0.8,1-0.3)
 
             # For each x1 we find the corresponding x2 value that ensures constant utility along uA and uB
             solA = scipy.optimize.root(objectiveA,0)
@@ -342,13 +380,13 @@ class ExchangeEcon :
         x2B_vec = np.flip(x2B_vec)
         
         # We find the two points at which indifference curves crosses, such that we may slice the arrays
-        # idx = np.argwhere(np.diff(np.sign(x2A_vec-x2B_vec))).flatten()
-        # f = idx[0] + 1 ; l = idx[1] + 1
+        idx = np.argwhere(np.diff(np.sign(x2A_vec-x2B_vec))).flatten()
+        f = idx[0] + 1 ; l = idx[1] + 1
 
         # The sliced arrays are outputted
-        return x1_vec, x2A_vec, x2B_vec
+        return x1_vec[f:l], x2A_vec[f:l], x2B_vec[f:l]
     
-    def PlotSocialPlannerEq(self,x1_vec,x2A_vec,x2B_vec,optA,optB) :
+    def PlotSocialPlannerEq(self,x1_vec,x2A_vec,x2B_vec) : # ,optA,optB
         # a. total endowment
         w1bar = 1.0 ; w2bar = 1.0
 
@@ -367,11 +405,36 @@ class ExchangeEcon :
         ax_B.invert_xaxis()
         ax_B.invert_yaxis()
 
-        # Plot the endowment and core
-        ax_A.scatter(optA, optB, marker='o',color='blue',label='Social Optimum',zorder = 2)
+
+        # Plot endowment
         ax_A.scatter(self.par.w1A,self.par.w2A,marker='s',color='black',label='endowment',zorder = 2)
-        ax_A.plot(x1_vec,x2A_vec,ls=':',color='red',label='$u^A$'f'({optA:.2f},{optB:.2f})',zorder=1)
-        ax_A.plot(x1_vec,x2B_vec,ls=':',color='blue',label='$u^B$'f'({1-optA:.2f},{1-optB:.2f})', zorder=1)
+
+        # Social optimum from question 6a
+        x1A_6a, X2A_6a = self.SocialPlanner(do_print = False)
+        ax_A.scatter(x1A_6a, X2A_6a, marker='o',color='blue',label='Social Optimum',zorder = 2)
+
+        # Plot allocation from question 3
+        x1A_3, x2A_3 = self.ClearingPrice(do_print = False)
+        ax_A.scatter(x1A_3, x2A_3, marker='o',color='red',label='Market optimum',zorder = 2)
+
+        # Plot allocation from question 4a and 4b
+        x1A_4a, x2A_4a = self.SolveADiscrete(do_print = False)
+        ax_A.scatter(x1A_4a, x2A_4a, marker='o',color='green',label='4a opt',zorder = 2)
+
+        x1A_4b, x2A_4b = self.SolveAContinous(do_print = False)
+        ax_A.scatter(x1A_4b, x2A_4b, marker='s',color='green',label='4b opt',zorder = 2)
+
+        # Plot allocation from question 5a and 5b
+        q, y, core = self.FindCore()
+        x1A_5a, x2A_5a = self.MaxUtilACore(core,do_print = False)
+        ax_A.scatter(x1A_5a, x2A_5a, marker='o',color='orange',label='5a opt',zorder = 2)
+
+        x1A_5b, x2A_5b = self.MaxUtilParetoImp(do_print = False)
+        ax_A.scatter(x1A_5b, x2A_5b, marker='s',color='orange',label='5b opt',zorder = 2)
+
+        # Plot indifference curves
+        ax_A.plot(x1_vec,x2A_vec,ls=':',color='red',label='$u^A$: Edge of core',zorder=1)
+        ax_A.plot(x1_vec,x2B_vec,ls=':',color='blue',label='$u^B$: Edge of core', zorder=1)
 
         # limits
         ax_A.plot([0,w1bar],[0,0],lw=2,color='black')
@@ -384,4 +447,29 @@ class ExchangeEcon :
         ax_B.set_xlim([w1bar + 0.1, -0.1])
         ax_B.set_ylim([w2bar + 0.1, -0.1])
 
-        ax_A.legend(frameon=True,loc='upper right',bbox_to_anchor=(1.6,1.0))
+        ax_A.legend(frameon=True,loc='upper right',bbox_to_anchor=(1.7,1.0))
+
+
+    def print_comparison(self) :
+        '''Function to sum up the results of questions 3 through 6a'''
+        q, y, core = self.FindCore()
+
+        for i,j in zip([(0.8,0.3),self.ClearingPrice(do_print = False),
+                  self.SolveADiscrete(do_print = False),
+                  self.SolveADiscrete(do_print = False),
+                  self.MaxUtilACore(core,do_print = False),
+                  self.MaxUtilParetoImp(do_print = False),
+                  self.SocialPlanner(do_print = False)],
+                  ['0','3','4a','4b','5a','5b','6a']) :
+            x1A_3, x2A_3 = i
+            uA_3 = self.utility_A(x1A_3, x2A_3)
+            uB_3 = self.utility_B(1-x1A_3, 1-x2A_3)
+            tot_3 = uA_3 + uB_3
+            if j != '0' :
+                print(start + 'Results from question' + ' ' + j + end)
+            else :
+                print(start + 'Initial endowment' + end) 
+            print(f'(x1A,x2A) = ({x1A_3:.3f},{x2A_3:.3f})')
+            print(f'uA = {uA_3:.3f} : uB = {uB_3:.3f} : uA + uB = {tot_3:.3f}')
+            print( )
+
