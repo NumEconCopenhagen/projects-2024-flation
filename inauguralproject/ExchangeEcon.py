@@ -477,11 +477,13 @@ class ExchangeEcon :
         W = np.random.uniform(0,1,(50,2))
         return W
     
-    def market_eq_loop(self,W) :
+    def market_eq_loop(self,W,p1=1,kappa=0.5,maxiter = 500) :
 
-   
-        
-        for i in W :
+        final_x1 = np.empty(W.shape[0])
+        final_x2 = np.empty(W.shape[0])
+        index = np.arange(0,W.shape[0],1)
+
+        for i,j in zip(W,index) :
 
             t = 0 # Initiate counter
             w1A,w2A = i
@@ -489,15 +491,16 @@ class ExchangeEcon :
             while True : # Loop to solve for market clearing price
                 
                 x1A,x2A = self.par.alpha*(w1A*p1+w2A)/p1, (1-self.par.alpha)*(w1A*p1+w2A)
+                x1B,x2B = self.par.beta*((1-w1A)*p1+(1-w2A))/p1, (1-self.par.beta)*((1-w1A)*p1+(1-w2A))
+                
                 eps1 = x1A-w1A + x1B-(1-w1A)
-
-                x1B,x2B = self.par.beta*(1-w1A)*p1+(1-w2A)/p1, (1-self.par.beta)*(1-w1A)*p1+(1-w2A)
-                eps2 = x2A-w2A + x2B-(1-w2A)
+                # eps2 = x2A-w2A + x2B-(1-w2A)
 
                 # Stops the loop when excess demand is close to 0 or if more than 500 iterations has been made
                 # Output is printed
                 if t >= maxiter :
                     print(f'The solver has exceeded {maxiter} iterations')
+                    break
                 elif np.abs(eps1) < 1e-08 :
                     break   
             
@@ -505,12 +508,50 @@ class ExchangeEcon :
                 p1 = p1 + kappa*eps1
 
                 t += 1   
+            
+            final_x1[j] = x1A
+            final_x2[j] = x2A
 
-            print(eps2)
+    # Plot the allocations
+        # a. total endowment
+        w1bar = 1.0 ; w2bar = 1.0
+
+        # b. figure set up
+        fig = plt.figure(frameon=False,figsize=(6,6), dpi=100)
+        ax_A = fig.add_subplot(1, 1, 1)
+
+        ax_A.set_xlabel("$x_1^A$")
+        ax_A.set_ylabel("$x_2^A$")
+
+        temp = ax_A.twinx()
+        temp.set_ylabel("$x_2^B$")
+
+        ax_B = temp.twiny()
+        ax_B.set_xlabel("$x_1^B$")
+        ax_B.invert_xaxis()
+        ax_B.invert_yaxis()
 
 
+        # Plot the results
+        ax_A.scatter(final_x1,final_x2,marker='s',color='black',label='Market optimums',zorder = 2)
 
-        
+        # limits
+        ax_A.plot([0,w1bar],[0,0],lw=2,color='black')
+        ax_A.plot([0,w1bar],[w2bar,w2bar],lw=2,color='black')
+        ax_A.plot([0,0],[0,w2bar],lw=2,color='black')
+        ax_A.plot([w1bar,w1bar],[0,w2bar],lw=2,color='black')
+
+        ax_A.set_xlim([-0.1, w1bar + 0.1])
+        ax_A.set_ylim([-0.1, w2bar + 0.1])    
+        ax_B.set_xlim([w1bar + 0.1, -0.1])
+        ax_B.set_ylim([w2bar + 0.1, -0.1])
+
+        ax_A.legend(frameon=True,loc='upper right',bbox_to_anchor=(1.7,1.0))
+
+
+            
+
+
 
 
 
