@@ -37,7 +37,6 @@ class ProductionEconomy :
 
 
     def firm_j(self,p) : 
-        ''' Computes optimal firm behaviour'''
 
         par = self.par
 
