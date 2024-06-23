@@ -1,11 +1,10 @@
-from types import SimpleNamespace
-import time
 import numpy as np
 from scipy import optimize
 import matplotlib.pyplot as plt
 
 class Model() :
     def __init__(self, alpha, s_k, s_h, s_m, delta, A_H, A_L, eta, theta):
+        
         self.alpha = alpha
         self.s_k = s_k
         self.s_h = s_h
@@ -18,92 +17,118 @@ class Model() :
 
 
     def output_and_accumulation(self, k, h, psi) :
-        """ Computes the output and the accumulation functions """
+
+        # As h is the share of skilled capital we bound it to be between 0 and 1
+        h_bounded = np.clip(h, 1e-6, 1 - 1e-6)
+        
+        # The capital stock is non negative
+        k_bounded = max(k, 1e-6)
 
         # The composite input is the the part of the CES production function in parantheses
-        # It is calculated seperetaly for easier reading
-        composite_input = (self.A_H * h)**psi + (self.A_L * (1 - h))**psi
+        composite_input = (self.A_H * h_bounded)**psi + (self.A_L * (1 - h_bounded))**psi
         
-        # Output per capita
-        Y = k**self.alpha * composite_input**((1 - self.alpha) / psi)  # Corrected use of psi
+        # Compute output per capita
+        y = k_bounded**self.alpha * composite_input**((1 - self.alpha) / psi)  # Corrected use of psi
         
-        # Capital accumulation per capita
-        k_next = self.s_k * Y + (1 - self.delta) * k - k
+        # Compute capital accumulation per capita
+        k_next = self.s_k * y + (1 - self.delta) * k_bounded - k_bounded
         
-        # Skilled labor accumulation per capita
-        h_next = self.s_h * Y + (1 - self.delta) * h - h
+        # Compute skilled labor accumulation per capita
+        h_next = self.s_h * y + (1 - self.delta) * h_bounded - h_bounded
         
         return k_next, h_next
 
 
-    def find_steady_state(self, k_init, h_init, psi):
-        """ Function to find the steady state value given initial guesses """
+    def find_steady_state(self, k_initial, h_initial, psi):
         
-        # We use the root function from scipy to find the steady state
-        solution = optimize.root(lambda vars: self.output_and_accumulation(*vars, psi), [k_init, h_init], method='hybr')
+        # We use the root function from scipy to find the steady state as the point k_next and h_next are equal to zero
+        solution = optimize.root(lambda i : self.output_and_accumulation(*i, psi), [k_initial, h_initial], method='hybr')
         
-        # In case the optimiziation doesn't converge we show an error
+        # In case the optimiziation doesn't converge we show an error message
         if not solution.success:
             print(f"Optimization did not converge: {solution.message}")
         
-        return solution.x
+        # Calculate output per capita
+        composite_input = (self.A_H * solution.x[1])**psi + (self.A_L * (1 - solution.x[1]))**psi
+        y = solution.x[0]**self.alpha * composite_input**((1 - self.alpha) / psi)
+
+        return solution.x[0], solution.x[1], y
 
 
     def plot_phase_diagram(self, k_range, h_range, psi):
-        """ Function to plot the phase diagram given a value of psi """
 
-        # Make a grid from the two ranges
+        # Make k_range and h_range into grids
         K, H = np.meshgrid(k_range, h_range)
         
-        # 
+        # We apply the output_and_accumulation function to the K and H grids to get grids for k_next = 0 and h_next = 0
         results = np.vectorize(lambda k, h: self.output_and_accumulation(k, h, psi),signature='(),()->(),()')(K, H)
         
+        DeltaK_0 = results[0]
+        DeltaH_0 = results[1]
+
+        # We find the steady state value
+        k_ss, h_ss, _ = self.find_steady_state(0.5, 0.3, psi)
+
+        # Make the figure
+        fig, ax = plt.subplots(1,1,figsize=(8, 6))
+
+        # To plot the phase diagram we plot two contour plots
+
+        # We first plot nullcline for deltak = 0
+        contours_k = ax.contour(K, H, DeltaK_0, levels=[0], colors='blue', linestyles='solid')
         
-        DeltaK = results[0]
+        # We then plot the nullcline for deltah = 0
+        contours_h = ax.contour(K, H, DeltaH_0, levels=[0], colors='red', linestyles='solid')
+
+        # We plot the steady state point
+        ax.scatter(k_ss,h_ss, marker = 's', color = 'black')
         
-        
-        DeltaH = results[1]
+        # We add the labels on the lines because it looks cool
+        ax.clabel(contours_k, inline=True, fontsize=8, fmt={0: 'Δk = 0'})
+        ax.clabel(contours_h, inline=True, fontsize=8, fmt={0: 'Δh = 0'})
 
+        # We set some options for the plot
+        ax.set_title(f'Phase Diagram with ψ = {psi}')
+        ax.set_xlabel('Capital per capita (k)')
+        ax.set_ylabel('Skilled labor per capita (h)')
 
-        plt.figure(figsize=(8, 6))
-
-        # We plot the phase diagram with level curves
-        contours_k = plt.contour(K, H, DeltaK, levels=[0], colors='blue', linestyles='solid')
-        plt.clabel(contours_k, inline=True, fontsize=8, fmt={0: 'Δk = 0'})
-
-        contours_h = plt.contour(K, H, DeltaH, levels=[0], colors='red', linestyles='solid')
-        plt.clabel(contours_h, inline=True, fontsize=8, fmt={0: 'Δh = 0'})
-
-        plt.title(f'Phase Diagram with ψ = {psi}')
-        plt.xlabel('Capital per capita (k)')
-        plt.ylabel('Skilled labor per capita (h)')
-        plt.grid(True)
-        # plt.legend()
-        plt.show()
 
     def compute_equilibrium_ext(self, k, h, m, psi):
-        """ Computes the equilibrium condition for given k, h, and psi, handling boundaries. """
 
-        h_adjusted = np.clip(h, 1e-6, 1 - 1e-6)  # Avoid zero in power calculations
-        m_adjusted = np.clip(m, 1e-6, 1 - 1e-6) # Avoid zero in power calculations
-        k_adjusted = max(k, 1e-6)  # Avoid zero in power calculations
+        # As h and m is the share of high skilled and medium skilled workers we bound it to be between 0 and 1
+        h_bounded = np.clip(h, 1e-6, 1 - 1e-6)  
+        m_bounded = np.clip(m, 1e-6, 1 - 1e-6) 
 
-        mid_low_input = ( self.theta * (m_adjusted ** self.eta) + (1-self.theta) * ((1-h_adjusted-m_adjusted) ** self.eta) ) ** (1/self.eta)
+        # The capital stock is non negative
+        k_bounded = max(k, 1e-6)  
 
-        composite_input = (self.A_H * h_adjusted)**psi + (self.A_L * (mid_low_input) )**psi
-        
-        Y = k_adjusted**self.alpha * composite_input**((1 - self.alpha) / psi) 
+        # We compute output per capita
+        mid_low_input = ( self.theta * (m_bounded ** self.eta) + (1-self.theta) * ((1-h_bounded-m_bounded) ** self.eta) ) ** (1/self.eta)
+        composite_input = (self.A_H * h_bounded)**psi + (self.A_L * (mid_low_input) )**psi
+        y = k_bounded**self.alpha * composite_input**((1 - self.alpha) / psi) 
 
-
-        k_next = self.s_k * Y + (1 - self.delta) * k_adjusted - k_adjusted
-        h_next = self.s_h * Y + (1 - self.delta) * h_adjusted - h_adjusted
-        m_next = self.s_m * Y + (1 - self.delta) * m_adjusted - m_adjusted
+        # Compute accumulation functions
+        k_next = self.s_k * y + (1 - self.delta) * k_bounded - k_bounded
+        h_next = self.s_h * y + (1 - self.delta) * h_bounded - h_bounded
+        m_next = self.s_m * y + (1 - self.delta) * m_bounded - m_bounded
 
         return k_next, h_next, m_next
 
+
     def find_steady_state_ext(self, k_init, h_init, m_init, psi):
-        """ Finds the steady state starting from initial values. """
-        solution = optimize.root(lambda vars: self.compute_equilibrium_ext(*vars, psi), [k_init, h_init, m_init], method='hybr')
+        
+        # We use the root function from scipy to find the steady state as the point k_next, m_next and h_next are equal to zero
+        solution = optimize.root(lambda i: self.compute_equilibrium_ext(*i, psi), [k_init, h_init, m_init], method='hybr')
+        
+        # In case the optimiziation doesn't converge we show an error message
         if not solution.success:
             print(f"Optimization did not converge: {solution.message}")
-        return solution.x
+
+        # Compute output per capita
+        mid_low_input = ( self.theta * (solution.x[2] ** self.eta) + (1-self.theta) * ((1-solution.x[1]-solution.x[2]) ** self.eta) ) ** (1/self.eta)
+        composite_input = (self.A_H * solution.x[1])**psi + (self.A_L * (mid_low_input) )**psi
+        y = solution.x[0]**self.alpha * composite_input**((1 - self.alpha) / psi) 
+
+        return solution.x[0], solution.x[1], solution.x[2], y
+
+        

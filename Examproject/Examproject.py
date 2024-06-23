@@ -56,6 +56,7 @@ class ProductionEconomy :
 
         par = self.par
 
+        # Compute implied profits
         _, _, pi_1 = self.firm_j(p1)
         _, _, pi_2 = self.firm_j(p2)
 
@@ -78,11 +79,13 @@ class ProductionEconomy :
             _, _, util = self.consumer(p1,p2,ell)
             return -util
         
-        # We emplyt optimize.minimize_scalar to find the ell that minimizes the objective function
+        # We employ optimize.minimize_scalar to find the ell that minimizes the objective function
         sol = optimize.minimize_scalar(objective_func,
                                        method = 'bounded',
                                        bounds = (0,2),
                                        args=(p1, p2) )
+        
+        # Compute optimal consumer behaviour
         ell_star = sol.x
         c1_star, c2_star, _ = self.consumer(p1,p2,ell_star)
 
@@ -110,10 +113,10 @@ class ProductionEconomy :
 
     def plot_market_clearing(self,p1_array,p2_array,conditions) :
         
+        # Arrays of market clearing conditions
         labor_mkt_clearing, good1_mkt_clearing, good2_mkt_clearing = conditions
-        # X, Y = np.meshgrid(p2_array , labor_mkt_clearing)
-        # two_dim = 
 
+        # Create a figure
         fig, ax = plt.subplots(3, 1, figsize = (9,27)) 
 
         # Graph 1: Labor market clearing condition
@@ -137,6 +140,7 @@ class ProductionEconomy :
 
         ax[2].set_title('Good market 2 clearing condition for different $p_1$')  
         
+        # Common attributes acroos all three graphs
         for i in range(2) :
             ax[i].set_xlabel('$p_2$')
             ax[i].set_xticks(np.round(p2_array,2))
@@ -145,13 +149,16 @@ class ProductionEconomy :
 
 
     def compute_equilibrium(self,initial_guess) :
-
+        
+        # Objective function: Find the roots, i.e. compute when the market clearing conditions equal 0
         def objective_func(p) :
             _,  good1_mkt_clearing, good2_mkt_clearing = self.check_market_clearing(p[0],p[1])
             return good1_mkt_clearing, good2_mkt_clearing
         
+        # Initial guess of prices
         x0 = initial_guess
 
+        # Find market clearing prices (roots)
         res = optimize.root(objective_func, x0, method = 'hybr')
 
         return res.x[0],res.x[1]
@@ -269,8 +276,7 @@ class Career :
         for k in range(par.K) :
             
             # Compute the career choice of graduate i for iteration k
-
-            if allow_change == False :
+            if allow_change == False : # For question 2 where graduates can't change career tracks
 
                 track, track_prior, track_post = self.career_choice(i)
 
@@ -287,6 +293,7 @@ class Career :
                     if prev_track == j + 1 and change == 1 :
                         change_each_track[j] = change_each_track[j] + 1
 
+            # Simulated careers with or without allowing for career change
             sim_track[k] = track
             sim_prior[k] = track_prior
             sim_post[k] = track_post
@@ -305,23 +312,27 @@ class Career :
         par = self.par
 
         if allow_change == False :
-
+            
+            # Simulated arrays without allowing for career change
             sim_track, sim_prior, sim_post = simulation
 
             # Allocate arrays for the share that chooses each of the J career paths
             track_share = np.zeros(par.J)
 
+            # Compute the share that chooses each track
             for j in range(par.J) :
                 track_indicator = np.array( [ [1 if sim_track[m] == j + 1 else 0 ] for m in range(par.K) ]).T[0]
                 track_share[j] = np.mean(track_indicator)
 
         else :
             
+            # Simulated arrays allowing for career change
             sim_prev_track, sim_track, sim_prior, sim_post, change_each_track = simulation
 
             # Allocate array to hold the total number if graduate i's that chose each track
             prev_total_each_track = np.zeros(par.J) 
 
+            # Compute the total amount of times a career track was chosen initially
             for j in range(par.J) :
                 prev_total_each_track[j] = np.count_nonzero(sim_prev_track == j + 1, axis = 0)
 
@@ -346,9 +357,11 @@ class Career :
 
         par = self.par
 
+        # Results from both question 2 and 3
         track_share, avg_prior, avg_post = results_q2
         change_share, new_avg_prior, new_avg_post = results_q3
 
+        # Make the figure
         fig, ax = plt.subplots(3,2,figsize = (20,20) )
 
         # Graphs to visualize the results of question 2
@@ -382,14 +395,9 @@ class Career :
 
         # Graphs to visualize the results of question 3
 
-        # Number of graduates is par.N
-        # Position on the x-axis is par.F
-
-        width = 0.2
-
-        ax[0,1].bar(par.F - width, change_share[:,0], width, color = 'maroon', label = 'Track 1')
-        ax[0,1].bar(par.F, change_share[:,1], width, color = 'indianred', label = 'Track 2')
-        ax[0,1].bar(par.F + width, change_share[:,2], width, color = 'lightcoral', label = 'Track 3')
+        ax[0,1].bar(par.F - 0.2, change_share[:,0], 0.2, color = 'maroon', label = 'Track 1')
+        ax[0,1].bar(par.F, change_share[:,1], 0.2, color = 'indianred', label = 'Track 2')
+        ax[0,1].bar(par.F + 0.2, change_share[:,2], 0.2, color = 'lightcoral', label = 'Track 3')
 
         ax[0,1].set_title('Share of each of the N graduates switching careers given initial track', fontsize = 17)
         ax[0,1].set_xlabel('Graduate')
@@ -426,11 +434,11 @@ class BarycentricInterpolation :
 
         print('The class BarycentricInterpolation has been initialized')
 
-
+    # The objective function to be minimized to compute all four points
     def objective_func(self,x1,x2,y1,y2) :
         return ( (x1 - y1) ** 2 + (x2 - y2) ** 2 ) ** (1/2) 
     
-
+    # The four different constraints for the minimazation problems
     def constraints(self,x1,x2,y1,y2) :
         return np.array([x1 > y1 and x2 > y2,x1 > y1 and x2 < y2,x1 < y1 and x2 < y2,x1 < y1 and x2 > y2])
 
@@ -438,14 +446,18 @@ class BarycentricInterpolation :
     def compute_points(self,X,y) :
 
         par = self.par
-
-        points = np.zeros([4,2])
         y1, y2 = y
 
+        # Initial values for the points A, B, C and D
+        points = np.zeros([4,2])
+      
+        # We make a loop to find the four points
         for point, cons in zip(points, range(par.points_to_find)) :
 
+            # Initial value that is to be minimized
             value = np.inf
 
+            # Loop through all pairs of x1 and x2 in X
             for x1,x2 in X :
 
                 # Calculate all 4 constraints
@@ -476,8 +488,11 @@ class BarycentricInterpolation :
     
 
     def plot_bary(self,A,B,C,D,X,y) :
+
+        # Create figure
         fig, ax = plt.subplots(1,1, figsize = (10,10))
 
+        # Make scatterplots
         ax.scatter(X[:,0],X[:,1], label = 'X')
         ax.scatter(A[0],A[1],marker = 's', label = 'A')
         ax.scatter(B[0],B[1],marker = 's', label = 'B')
@@ -485,11 +500,12 @@ class BarycentricInterpolation :
         ax.scatter(D[0],D[1],marker = 's', label = 'D')
         ax.scatter(y[0],y[1],marker = 's', label = 'y')
 
-        # if A is not None and B is not None and C is not None :
+        # Create triangle ABC
         ax.plot( [ A[0], B[0] ] , [ A[1], B[1] ], color = 'cyan', label = 'ABC' )
         ax.plot( [ B[0], C[0] ] , [ B[1], C[1] ], color = 'cyan' )
         ax.plot( [ A[0], C[0] ] , [ A[1], C[1] ], color = 'cyan' )
 
+        # Create triangle CDA
         ax.plot( [ C[0], D[0] ] , [ C[1], D[1] ], color = 'red', label = 'CDA' )
         ax.plot( [ D[0], A[0] ] , [ D[1], A[1] ], color = 'red' )
         ax.plot( [ A[0], C[0] ] , [ A[1], C[1] ], color = 'red' )
@@ -501,13 +517,16 @@ class BarycentricInterpolation :
 
         y1, y2 = y
 
+        # Numerator and denumerator for r1
         r1_num = (P2[1] - P3[1]) * (y1 - P3[0]) + (P3[0] - P2[0]) * (y2 - P3[1])
         r1_denum = (P2[1] - P3[1]) * (P1[0] - P3[0]) + (P3[0] - P2[0]) * (P1[1] - P3[1])
 
+        # Numerator and denumerator for r2
         r2_num = (P3[1] - P1[1]) * (y1 - P3[0]) + (P1[0] - P3[0]) * (y2 - P3[1])
         r2_denum = (P2[1] - P3[1]) * (P1[0] - P3[0]) + (P3[0] - P2[0]) * (P1[1] - P3[1])
 
         return r1_num / r1_denum, r2_num / r2_denum, 1 - r1_num / r1_denum - r2_num / r2_denum
+
 
     def algorithm(self,X,y,f) :
         
