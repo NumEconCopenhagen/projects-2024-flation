@@ -7,7 +7,6 @@ from scipy.stats import norm
 
 from types import SimpleNamespace
 import matplotlib.pyplot as plt
-import Examproject
 plt.rcParams.update({"axes.grid":True,"grid.color":"black","grid.alpha":"0.25","grid.linestyle":"--"})
 plt.rcParams.update({'font.size': 14})
 
@@ -33,6 +32,8 @@ class ProductionEconomy :
         # Other parameters
         par.w = 1.0 # Wages are set as numeraire
         par.kappa = 0.1 # Social cost of carbon from the production of good 2  
+
+        print('The class ProductionEconomy has been initialized')
 
 
     def firm_j(self,p) : 
@@ -108,6 +109,42 @@ class ProductionEconomy :
         return labor_mkt_clearing, good1_mkt_clearing, good2_mkt_clearing
     
 
+    def plot_market_clearing(self,p1_array,p2_array,conditions) :
+        
+        labor_mkt_clearing, good1_mkt_clearing, good2_mkt_clearing = conditions
+        # X, Y = np.meshgrid(p2_array , labor_mkt_clearing)
+        # two_dim = 
+
+        fig, ax = plt.subplots(3, 1, figsize = (9,27)) 
+
+        # Graph 1: Labor market clearing condition
+        for i,j in enumerate(p1_array) :
+            p1 = round(j,2)
+            ax[0].scatter(p2_array,labor_mkt_clearing[i,:], label = p1)
+
+        ax[0].set_title('Labor market clearing condition for different $p_1$') 
+
+        # Graph 2: Good market 1 clearing condition
+        for i,j in enumerate(p1_array) :
+            p1 = round(j,2)
+            ax[1].scatter(p2_array,good1_mkt_clearing[i,:], label = p1)
+   
+        ax[1].set_title('Good market 1 clearing condition for different $p_1$')
+
+        # Graph 3: Good market 2 clearing condition
+        for i,j in enumerate(p1_array) :
+            p1 = round(j,2)
+            ax[2].scatter(p2_array,good2_mkt_clearing[i,:], label = p1)
+
+        ax[2].set_title('Good market 2 clearing condition for different $p_1$')  
+        
+        for i in range(2) :
+            ax[i].set_xlabel('$p_2$')
+            ax[i].set_xticks(np.round(p2_array,2))
+            ax[i].set_ylabel('Value of market clearing condition')
+            ax[i].legend(frameon=True,loc='upper right',bbox_to_anchor=(1.2,1.0), title = '$p_1$ values') 
+
+
     def compute_equilibrium(self,initial_guess) :
 
         def objective_func(p) :
@@ -136,6 +173,8 @@ class Career :
 
         par.F = np.arange(1,par.N + 1)  # Friends of graduate i = 1, 2, ..., N
         par.c = 1                       # Cost of switching careers
+
+        print('The class Career has been initialized')
 
 
     def expected_career_util(self) :
@@ -304,42 +343,192 @@ class Career :
             return change_share, avg_prior, avg_post
 
 
-    def plot_results(self,results) :
+    def plot_results(self,results_q2,results_q3) :
 
         par = self.par
 
-        track_share, avg_prior, avg_post = results
+        track_share, avg_prior, avg_post = results_q2
+        change_share, new_avg_prior, new_avg_post = results_q3
 
-        fig, ax = plt.subplots(3,1,figsize = (10,20) )
+        fig, ax = plt.subplots(3,2,figsize = (20,20) )
+
+        # Graphs to visualize the results of question 2
 
         # Graph 1: Stacked bar chart to show the share of simulations where graduate i chose 1 of the J career tracks
-        ax[0].bar(par.F, track_share[:,0], label = 'Track 1', color = 'midnightblue') 
-        ax[0].bar(par.F, track_share[:,1], bottom = track_share[:,0], label = 'Track $', color = 'cornflowerblue') 
-        ax[0].bar(par.F, track_share[:,2], bottom = track_share[:,0] + track_share[:,1], label = 'Track 3', color = 'lightsteelblue')
+        ax[0,0].bar(par.F, track_share[:,0], label = 'Track 1', color = 'midnightblue') 
+        ax[0,0].bar(par.F, track_share[:,1], bottom = track_share[:,0], label = 'Track $', color = 'cornflowerblue') 
+        ax[0,0].bar(par.F, track_share[:,2], bottom = track_share[:,0] + track_share[:,1], label = 'Track 3', color = 'lightsteelblue')
 
-        ax[0].set_title('Share of each of the N graduates choosing each career', fontsize = 17)
-        ax[0].set_xlabel('Graduate')
-        ax[0].set_ylabel('Share choosing a given career')
-        ax[0].set_xticks(par.F)
-        ax[0].legend()
+        ax[0,0].set_title('Share of each of the N graduates choosing each career', fontsize = 17)
+        ax[0,0].set_xlabel('Graduate')
+        ax[0,0].set_ylabel('Share choosing a given career')
+        ax[0,0].set_xticks(par.F)
+        ax[0,0].legend()
 
         # Graph 2: Bar chart to show the average prior expected utility for each graduate
-        ax[1].bar(par.F, avg_prior, color = 'cornflowerblue')
+        ax[1,0].bar(par.F, avg_prior, color = 'cornflowerblue')
         
-        ax[1].set_title('Average prior expected utility for each of the N graduates', fontsize = 17)
-        ax[1].set_xlabel('Graduate')
-        ax[1].set_ylabel('Average prior expected utility')
-        ax[1].set_xticks(par.F)
+        ax[1,0].set_title('Average prior expected utility for each of the N graduates', fontsize = 17)
+        ax[1,0].set_xlabel('Graduate')
+        ax[1,0].set_ylabel('Average prior expected utility')
+        ax[1,0].set_xticks(par.F)
 
         # Graph 3: Bar chart to show the average posterior realized utility for each graduate
-        ax[2].bar(par.F, avg_post, color = 'cornflowerblue')
+        ax[2,0].bar(par.F, avg_post, color = 'cornflowerblue')
 
-        ax[2].set_title('Average posterior realized utility for each of the N graduates', fontsize = 17)
-        ax[2].set_xlabel('Graduate')
-        ax[2].set_ylabel('Average posterior realized utility')
-        ax[2].set_xticks(par.F)
+        ax[2,0].set_title('Average posterior realized utility for each of the N graduates', fontsize = 17)
+        ax[2,0].set_xlabel('Graduate')
+        ax[2,0].set_ylabel('Average posterior realized utility')
+        ax[2,0].set_xticks(par.F)
+
+        # Graphs to visualize the results of question 3
+
+        # Number of graduates is par.N
+        # Position on the x-axis is par.F
+
+        width = 0.2
+
+        ax[0,1].bar(par.F - width, change_share[:,0], width, color = 'maroon', label = 'Track 1')
+        ax[0,1].bar(par.F, change_share[:,1], width, color = 'indianred', label = 'Track 2')
+        ax[0,1].bar(par.F + width, change_share[:,2], width, color = 'lightcoral', label = 'Track 3')
+
+        ax[0,1].set_title('Share of each of the N graduates switching careers given initial track', fontsize = 17)
+        ax[0,1].set_xlabel('Graduate')
+        ax[0,1].set_ylabel('Share who chooses to switch careers')
+        ax[0,1].set_xticks(par.F)
+        ax[0,1].legend()
+
+        # Graph 5: Bar chart to show the average prior expected utility for each graduate
+        ax[1,1].bar(par.F, new_avg_prior, color = 'indianred')
+        
+        ax[1,1].set_title('Average prior expected utility for each of the N graduates', fontsize = 17)
+        ax[1,1].set_xlabel('Graduate')
+        ax[1,1].set_ylabel('Average prior expected utility')
+        ax[1,1].set_xticks(par.F)
+
+        # Graph 6: Bar chart to show the average posterior realized utility for each graduate
+        ax[2,1].bar(par.F, new_avg_post, color = 'indianred')
+
+        ax[2,1].set_title('Average posterior realized utility for each of the N graduates', fontsize = 17)
+        ax[2,1].set_xlabel('Graduate')
+        ax[2,1].set_ylabel('Average posterior realized utility')
+        ax[2,1].set_xticks(par.F)
 
         fig.tight_layout(pad=2.5)
+
+
+class BarycentricInterpolation :
+
+    def __init__(self) :
+
+        par = self.par = SimpleNamespace()
+
+        par.points_to_find = 4
+
+        print('The class BarycentricInterpolation has been initialized')
+
+
+    def objective_func(self,x1,x2,y1,y2) :
+        return ( (x1 - y1) ** 2 + (x2 - y2) ** 2 ) ** (1/2) 
+    
+
+    def constraints(self,x1,x2,y1,y2) :
+        return np.array([x1 > y1 and x2 > y2,x1 > y1 and x2 < y2,x1 < y1 and x2 < y2,x1 < y1 and x2 > y2])
+
+
+    def compute_points(self,X,y) :
+
+        par = self.par
+
+        points = np.zeros([4,2])
+        y1, y2 = y
+
+        for point, cons in zip(points, range(par.points_to_find)) :
+
+            value = np.inf
+
+            for x1,x2 in X :
+
+                # Calculate all 4 constraints
+                constraint = self.constraints(x1,x2,y1,y2)
+
+                # Evaluate the relevant constraint and return the function value if the constraint is true
+                if constraint[cons] == True :
+                    temp_val = self.objective_func(x1,x2,y1,y2)
+
+                # If the constraint is not true return NaN
+                else :
+                    temp_val = np.NaN
+
+                # If the calculated function value is the smallest yet update the variable value and the point
+                if temp_val < value :
+                    value = temp_val
+                    point = [x1,x2]
+
+                points[cons] = point
+            
+        # Define points
+        A = points[0]
+        B = points[1]
+        C = points[2]
+        D = points[3]
+
+        return A,B,C,D
+    
+
+    def plot_bary(self,A,B,C,D,X,y) :
+        fig, ax = plt.subplots(1,1, figsize = (10,10))
+
+        ax.scatter(X[:,0],X[:,1], label = 'X')
+        ax.scatter(A[0],A[1],marker = 's', label = 'A')
+        ax.scatter(B[0],B[1],marker = 's', label = 'B')
+        ax.scatter(C[0],C[1],marker = 's', label = 'C')
+        ax.scatter(D[0],D[1],marker = 's', label = 'D')
+        ax.scatter(y[0],y[1],marker = 's', label = 'y')
+
+        # if A is not None and B is not None and C is not None :
+        ax.plot( [ A[0], B[0] ] , [ A[1], B[1] ], color = 'cyan', label = 'ABC' )
+        ax.plot( [ B[0], C[0] ] , [ B[1], C[1] ], color = 'cyan' )
+        ax.plot( [ A[0], C[0] ] , [ A[1], C[1] ], color = 'cyan' )
+
+        ax.plot( [ C[0], D[0] ] , [ C[1], D[1] ], color = 'red', label = 'CDA' )
+        ax.plot( [ D[0], A[0] ] , [ D[1], A[1] ], color = 'red' )
+        ax.plot( [ A[0], C[0] ] , [ A[1], C[1] ], color = 'red' )
+
+        ax.legend()
+
+
+    def compute_bary_coordinates(self,P1,P2,P3,y) :
+
+        y1, y2 = y
+
+        r1_num = (P2[1] - P3[1]) * (y1 - P3[0]) + (P3[0] - P2[0]) * (y2 - P3[1])
+        r1_denum = (P2[1] - P3[1]) * (P1[0] - P3[0]) + (P3[0] - P2[0]) * (P1[1] - P3[1])
+
+        r2_num = (P3[1] - P1[1]) * (y1 - P3[0]) + (P1[0] - P3[0]) * (y2 - P3[1])
+        r2_denum = (P2[1] - P3[1]) * (P1[0] - P3[0]) + (P3[0] - P2[0]) * (P1[1] - P3[1])
+
+        return r1_num / r1_denum, r2_num / r2_denum, 1 - r1_num / r1_denum - r2_num / r2_denum
+
+    def algorithm(self,X,y,f) :
+        
+        # 1. Compute A, B, C and D. If not possible return NaN.
+        A,B,C,D = self.compute_points(X,y)
+
+        # 2. If y is inside the triangle ABC return ...
+        if all(0 <= i <= 1 for i in self.compute_bary_coordinates(A,B,C,y)) :
+            f_approx = np.sum( np.array(self.compute_bary_coordinates(A,B,C,y)) * np.array([f(A),f(B),f(C)]) )
+    
+        # 3. If y is inside the triangle CDA return ...
+        elif all(0 <= i <= 1 for i in self.compute_bary_coordinates(C,D,A,y)) :
+            f_approx = np.sum( np.array(self.compute_bary_coordinates(C,D,A,y)) * np.array([f(C),f(D),f(A)]) )
+            
+        # 4. Return NaN.
+        else :
+            f_approx = np.NaN
+
+        return f_approx
+        
 
 
     
